@@ -1,158 +1,204 @@
-# TitanDB
+# 🚀 TitanDB – Disk-Backed Key-Value Store (C++17)
 
-A lightweight, **disk-backed key-value store** written in C++17 — built from scratch with no external dependencies.
+![C++17](https://img.shields.io/badge/C%2B%2B-17-blue?style=flat-square&logo=c%2B%2B)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey?style=flat-square)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)
+![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
-Designed for learning systems programming concepts: fixed-width serialization, byte-offset indexing, file I/O with `seekg`/`seekp`, soft deletes, and log compaction.
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│                  TitanDB                    │
-│                                             │
-│  put/get/update/delete                      │
-│         │                                   │
-│         ▼                                   │
-│  In-Memory Hash Index                       │
-│  unordered_map<key, byte_offset>            │
-│         │                                   │
-│         │  O(1) seekg/seekp                 │
-│         ▼                                   │
-│  ┌──────────────────────────────────────┐   │
-│  │         titan.db (binary file)       │   │
-│  │  [flag|key(128B)|value(256B)] record │   │
-│  │  [flag|key(128B)|value(256B)] record │   │
-│  │  ...                                 │   │
-│  └──────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-```
-
-### Key Design Decisions
-
-| Decision | Why |
-|---|---|
-| **Fixed-width records (385 bytes)** | Enables O(1) in-place updates via `seekp` — no rewriting the whole file |
-| **In-memory hash index** | Maps keys → byte offsets; achieves O(1) reads after startup |
-| **Soft deletes (tombstone flag)** | Flip 1 byte instead of shifting the entire file |
-| **Log compaction** | Reclaims disk space by rewriting only live records |
-| **No external libraries** | Pure C++ stdlib: `<fstream>`, `<unordered_map>`, `<optional>` |
+A lightweight, log-structured key-value store built from scratch in C++17, inspired by Bitcask-style storage engines. TitanDB demonstrates core systems concepts like persistent storage, crash recovery, append-only design, and in-memory indexing.
 
 ---
 
-## Record Format (on disk)
+## 📌 Features
+
+- ⚡ **Append-Only Log Storage**
+  - All writes (`put`, `update`, `delete`) are appended to disk
+  - Ensures sequential I/O for better performance
+
+- 🧠 **In-Memory Hash Index**
+  - Maps keys → file offsets
+  - Enables O(1) lookups without loading entire DB into memory
+
+- 💾 **Persistent Storage**
+  - Data survives across program restarts
+  - Automatic index reconstruction via file scan on startup
+
+- 🪦 **Soft Deletes (Tombstones)**
+  - Deletes are handled via tombstone records
+  - Avoids expensive in-place modifications
+
+- 🛡️ **Crash Resilience (Basic)**
+  - Safe record reading using `rec_read_safe`
+  - Prevents corruption from partial writes
+
+- 🔁 **Update via Append**
+  - Updates create new versions instead of overwriting
+  - Older versions are cleaned during compaction (planned)
+
+---
+
+## 🧱 Architecture Overview
 
 ```
-Offset 0:   [1  byte ] alive flag (1 = live, 0 = deleted)
-Offset 1:   [128 bytes] key   (null-padded)
-Offset 129: [256 bytes] value (null-padded)
-            ─────────────────
-Total:       385 bytes per record
+            +----------------------+
+            |   In-Memory Index    |
+            |  key → file offset   |
+            +----------+-----------+
+                       |
+                       ↓
+            +----------------------+
+            |   Append-Only Log    |
+            |  [Record][Record]... |
+            +----------------------+
+```
+
+### Record Format
+
+```cpp
+struct Record {
+    char key[32];
+    char val[64];
+    bool alive; // tombstone flag
+};
+```
+
+- Fixed-size binary serialization
+- Enables direct offset-based access (`seekg`, `seekp`)
+
+---
+
+## ⚙️ Core Operations
+
+### 🟢 Put
+- Appends new record to file
+- Updates index with latest offset
+
+### 🔵 Get
+- Looks up offset from index
+- Reads record from disk
+- Returns value if `alive == true`
+
+### 🟡 Update
+- Internally calls `put()`
+- Follows append-only semantics
+
+### 🔴 Delete
+- Appends tombstone record (`alive = false`)
+- Removes key from index
+
+---
+
+## 🔄 Startup Recovery
+
+On initialization:
+- File is scanned sequentially
+- Index is rebuilt from records
+- Latest state of each key is restored
+
+```cpp
+for (pos = 0; pos < file_end; pos += sizeof(Record)) {
+    if (!rec_read_safe(...)) break;
+
+    if (r.alive)
+        ind[r.key] = pos;
+    else
+        ind.erase(r.key);
+}
 ```
 
 ---
 
-## Operations & Complexity
+## 🛠️ Build & Run
 
-| Operation | Time | Notes |
-|---|---|---|
-| `put(key, val)` | O(1) amortized | Appends to end of file |
-| `get(key)` | O(1) | Hash lookup → single `seekg` |
-| `update(key, val)` | O(1) | In-place overwrite via `seekp` |
-| `remove(key)` | O(1) | Flip alive byte to 0 (tombstone) |
-| `compact()` | O(n) | Rewrites all live records |
-| Startup (index load) | O(n) | Linear scan once to build hash index |
+### Compile
 
----
-
-## Build & Run
-
-### Requirements
-- g++ with C++17 support
-- `make`
-
-### Build
 ```bash
-git clone https://github.com/YOUR_USERNAME/TitanDB.git
-cd TitanDB
-make
+g++ -std=c++17 main.cpp TitanDB.cpp record.cpp -o titan
 ```
 
-### Run tests
+### Run
+
 ```bash
-make test
-```
-
-### Interactive CLI
-```bash
-make run
-# or
-./titandb mydata.db
+./titan
 ```
 
 ---
 
-## CLI Usage
+## 🧪 Example Usage
 
-```
-titandb> put username abhigyan
-OK - inserted 'username'
+```cpp
+TitanDB db("titan.db");
 
-titandb> get username
-username => abhigyan
+db.put("username", "abhigyan");
+db.put("college", "NIT Silchar");
 
-titandb> update username abhigyan_tiwari
-OK - updated 'username'
+db.update("college", "IIT Bombay");
 
-titandb> delete username
-OK - deleted 'username'
+auto val = db.get("username");
+if (val) std::cout << *val << std::endl;  // abhigyan
 
-titandb> list
-=== TitanDB Contents (0 records) ===
+db.remove("username");
 
-titandb> compact
-OK - compacted. Live records: 0
-
-titandb> exit
-Goodbye.
+auto gone = db.get("username");
+if (!gone) std::cout << "Key not found\n";  // Key not found
 ```
 
 ---
 
-## Project Structure
+## ⚠️ Current Limitations
 
-```
-TitanDB/
-├── include/
-│   └── titandb.h          # Public API + constants
-├── src/
-│   ├── titandb.cpp        # Core implementation
-│   └── main.cpp           # Interactive CLI
-├── tests/
-│   └── test_titandb.cpp   # 22 unit tests
-└── Makefile
-```
+- Fixed-size keys/values
+- No concurrency control (single-threaded)
+- No checksum validation (corruption detection is basic)
+- No compaction (log grows indefinitely)
 
 ---
 
-## What I Learned / Concepts Demonstrated
+## 🚀 Roadmap / Future Improvements
 
-- **Binary file I/O** in C++ (`fstream`, `seekg`, `seekp`, `read`, `write`)
-- **Fixed-width serialization** for constant-time random access
-- **Hash indexing** for O(1) key lookup without loading entire DB into RAM
-- **Soft deletes** vs hard deletes — trade-offs in disk usage vs write speed
-- **Log compaction** — a core concept in real-world KV stores (LevelDB, RocksDB)
-- Memory vs disk trade-offs in systems design
-
----
-
-## Inspired By
-
-Real-world systems like [Bitcask](https://riak.com/assets/bitcask-intro.pdf) (the storage engine behind Riak), which uses the same append-only log + in-memory index architecture.
+- 🔁 **Log Compaction** — Remove stale records and reclaim disk space
+- 🔐 **Thread Safety** — Add mutex/shared_mutex for concurrent access
+- 🧾 **Write-Ahead Logging (WAL)** — Improve crash guarantees
+- 🧠 **Bloom Filters** — Faster negative lookups
+- 📦 **Variable-Length Records** — More flexible storage
+- 🛡️ **Checksums** — Detect corrupted/partial writes reliably
 
 ---
 
-## License
+## 📚 Key Concepts Demonstrated
 
-MIT
+- File I/O (`seekg`, `seekp`, binary serialization)
+- Log-structured storage design
+- In-memory indexing
+- Crash recovery techniques
+- Tombstone-based deletion
+- Trade-offs between in-place vs append-only updates
+
+---
+
+## 🤝 Contributing
+
+Contributions and PRs are welcome! If you'd like to work on any of the roadmap items or find a bug:
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+Feel free to open an issue for discussion before starting work on larger features.
+
+---
+
+## 👤 Author
+
+**Abhigyan Tiwari**
+- GitHub: [@Abh-igyan](https://github.com/Abh-igyan)
+- B.Tech CSE, NIT Silchar (2024–2028)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
