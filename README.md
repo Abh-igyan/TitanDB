@@ -177,17 +177,34 @@ if (!gone) std::cout << "Key not found\n";  // Key not found
 
 ---
 
-## 🤝 Contributing
+## 🧪 Test Suite
 
-Contributions and PRs are welcome! If you'd like to work on any of the roadmap items or find a bug:
+28 automated tests across 8 categories:
 
-1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m 'Add your feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
+| Category | What it covers |
+|---|---|
+| Basic CRUD | put, get, update, delete, duplicates |
+| Persistence | index rebuild after restart |
+| Compaction | live records preserved, dead dropped |
+| Stale Cleanup | latest version kept after multiple updates |
+| Compaction Persistence | compacted file survives restart |
+| Corruption Handling | partial writes don't corrupt valid data |
+| Edge Cases | spaces in values, bulk insert/delete |
+| Size Limits | keys/values exceeding fixed-width bounds |
 
-Feel free to open an issue for discussion before starting work on larger features.
+### Run tests
+
+```bash
+g++ -std=c++17 tests/test_titandb.cpp src/TitanDB.cpp src/record.cpp -Iinclude -o run_tests
+./run_tests
+```
+
+Expected output:
+```
+Results: 28 passed, 1 failed
+Success Rate: 96.5517%
+Execution Time: X ms
+```
 
 ---
 
