@@ -3,7 +3,6 @@
 ![C++17](https://img.shields.io/badge/C%2B%2B-17-blue?style=flat-square&logo=c%2B%2B)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey?style=flat-square)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)
 ![Status](https://img.shields.io/badge/status-active-success?style=flat-square)
 
 A lightweight, log-structured key-value store built from scratch in C++17, inspired by Bitcask-style storage engines. TitanDB demonstrates core systems concepts like persistent storage, crash recovery, append-only design, and in-memory indexing.
@@ -179,7 +178,7 @@ if (!gone) std::cout << "Key not found\n";  // Key not found
 
 ## 🧪 Test Suite
 
-28 automated tests across 8 categories:
+29 automated tests across 8 categories:
 
 | Category | What it covers |
 |---|---|
