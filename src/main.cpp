@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include "titandb.h"
+#include "TitanDB.hpp"
 
 void printHelp() {
     std::cout << "\nTitanDB CLI Commands:\n"
@@ -11,7 +11,6 @@ void printHelp() {
               << "  delete <key>         - Delete a key\n"
               << "  list                 - Show all records\n"
               << "  size                 - Show record count\n"
-              << "  compact              - Reclaim space from deleted records\n"
               << "  help                 - Show this menu\n"
               << "  exit                 - Quit\n\n";
 }
@@ -25,13 +24,13 @@ int main(int argc, char* argv[]) {
               << "╚══════════════════════════════╝\n";
     std::cout << "Database file: " << dbFile << "\n";
 
-    titandb::TitanDB db(dbFile);
+    TitanDB db(dbFile);
     std::cout << "Loaded " << db.size() << " existing records.\n";
     printHelp();
 
     std::string line;
     while (true) {
-        std::cout << "titandb> ";
+        std::cout << "TitanDB> ";
         if (!std::getline(std::cin, line)) break;
         if (line.empty()) continue;
 
@@ -83,11 +82,8 @@ int main(int argc, char* argv[]) {
         } else if (cmd == "size") {
             std::cout << "Records: " << db.size() << "\n";
 
-        } else if (cmd == "compact") {
-            db.compact();
-            std::cout << "OK - compacted. Live records: " << db.size() << "\n";
-
-        } else if (cmd == "help") {
+        } 
+        else if (cmd == "help") {
             printHelp();
 
         } else {
