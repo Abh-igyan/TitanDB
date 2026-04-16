@@ -11,17 +11,17 @@ void printHelp() {
               << "  delete <key>         - Delete a key\n"
               << "  list                 - Show all records\n"
               << "  size                 - Show record count\n"
-              << "  help                 - Show this menu\n"
+              << "  compact              - Reclaim space from deleted records\n"
               << "  exit                 - Quit\n\n";
 }
 
 int main(int argc, char* argv[]) {
     std::string dbFile = (argc > 1) ? argv[1] : "titan.db";
 
-    std::cout << "╔══════════════════════════════╗\n"
-              << "║       TitanDB v1.0           ║\n"
-              << "║  High-Performance KV Store   ║\n"
-              << "╚══════════════════════════════╝\n";
+    std::cout << "|------------------------------|\n"
+              << "|       TitanDB v1.0           |\n"
+              << "|  High-Performance KV Store   |\n"
+              << "|------------------------------|\n";
     std::cout << "Database file: " << dbFile << "\n";
 
     TitanDB db(dbFile);
@@ -81,6 +81,11 @@ int main(int argc, char* argv[]) {
 
         } else if (cmd == "size") {
             std::cout << "Records: " << db.size() << "\n";
+
+        } 
+        else if (cmd == "compact") {
+            db.compact();
+            std::cout << "OK - compacted. Live records: " << db.size() << "\n";
 
         } 
         else if (cmd == "help") {
