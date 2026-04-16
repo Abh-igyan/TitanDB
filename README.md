@@ -7,6 +7,11 @@
 
 A lightweight, log-structured key-value store built from scratch in C++17, inspired by Bitcask-style storage engines. TitanDB demonstrates core systems concepts like persistent storage, crash recovery, append-only design, and in-memory indexing.
 
+## 🎥 Demo
+
+> Basic CRUD + Compaction in action
+
+![TitanDB Demo](assets/titanDB.gif)
 ---
 
 ## 📌 Features
